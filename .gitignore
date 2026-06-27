@@ -1,0 +1,19 @@
+# Python environment and cache
+venv/
+.venv/
+__pycache__/
+*.pyc
+
+# Environment variables
+.env
+
+# Qodo/AI tools
+qodo/
+continue/
+
+# Database / SQLite
+*.db
+*.sqlite3
+
+# Alembic database history (optional - sometimes people keep this)
+# alembic/versions/*.py
