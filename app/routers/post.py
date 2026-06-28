@@ -30,27 +30,50 @@ router = APIRouter(
 #     print(posts)
 #     return posts
 # routers/post.py
+# @router.get("/", response_model=list[schema.PostOut])
+# async def get_posts(db: Session = Depends(get_db)):
+#     results = db.query(models.Post, func.count(models.Vote.post_id).label("votes")).join(
+#         models.Vote, models.Vote.post_id == models.Post.id, isouter=True ).group_by(models.Post.id).all() 
+#     # Format the result to return the Post object and the votes count
+#     # routers/post.py - Revised get_posts loop
+#     posts = []
+#     for post, votes in results:
+#         # Create a dictionary that explicitly includes the owner object and the votes count
+#         post_item = {
+#             "id": post.id,
+#             "title": post.title,
+#             "content": post.content,
+#             "published": post.published,
+#             "created_at": post.created_at,
+#             "owner_id": post.owner_id,
+#             "owner": post.owner, # This must be the User object from the relationship
+#             "votes": votes
+#         }
+#         posts.append(post_item)
+#     return posts
+
 @router.get("/", response_model=list[schema.PostOut])
 async def get_posts(db: Session = Depends(get_db)):
-    results = db.query(models.Post, func.count(models.Vote.post_id).label("votes")).join(
-        models.Vote, models.Vote.post_id == models.Post.id, isouter=True ).group_by(models.Post.id).all() 
-    # Format the result to return the Post object and the votes count
-    # routers/post.py - Revised get_posts loop
-    posts = []
+    # We use join and group_by, but keep the SQLAlchemy object intact
+    results = db.query(models.Post, func.count(models.Vote.post_id).label("votes"))\
+        .join(models.Vote, models.Vote.post_id == models.Post.id, isouter=True)\
+        .group_by(models.Post.id).all()
+    
+    posts_list = []
     for post, votes in results:
-        # Create a dictionary that explicitly includes the owner object and the votes count
-        post_item = {
-            "id": post.id,
-            "title": post.title,
-            "content": post.content,
-            "published": post.published,
-            "created_at": post.created_at,
-            "owner_id": post.owner_id,
-            "owner": post.owner, # This must be the User object from the relationship
-            "votes": votes
-        }
-        posts.append(post_item)
-    return posts
+        # Instead of manual dict, we construct an object that matches schema.PostOut
+        post_data = schema.PostOut(
+            id=post.id,
+            title=post.title,
+            content=post.content,
+            published=post.published,
+            created_at=post.created_at,
+            owner_id=post.owner_id,
+            owner=post.owner, # SQLAlchemy handles the relationship here
+            votes=votes
+        )
+        posts_list.append(post_data)
+    return posts_list
 #we want user to send us a json with title string and content string
 @router.post("/", status_code=status.HTTP_201_CREATED, response_model=schema.Post, )#decorator to create a post
 async def create_post(new_post: schema.PostCreate, db: Session = Depends(get_db), current_user: int = Depends(auth2.get_current_user)):#demands that incoming info match the rules of your post pydantic model
