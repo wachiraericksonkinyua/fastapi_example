@@ -15,8 +15,13 @@ from .routers import auth
 from .config import settings
 
 from fastapi.middleware.cors import CORSMiddleware
-
+import os
+from alembic.config import Config
+from alembic import command
 # models.Base.metadata.create_all(bind=engine)  # this line creates the tables in the database based on the models defined in the models.py file
+# Run migrations automatically
+alembic_cfg = Config("alembic.ini")
+command.upgrade(alembic_cfg, "head")
 
 app = FastAPI()
 
